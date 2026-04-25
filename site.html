@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Помощник координатора</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f7f9fc;
+    }
+
+    .container {
+      display: flex;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .blocks {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .block {
+      padding: 20px 16px;
+      border-radius: 12px;
+      background-color: rgba(100, 149, 237, 0.3); /* легкий полупрозр. синий */
+      color: #222;
+      text-align: center;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .block:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .block.active {
+      background-color: purple;
+      color: white;
+      border: none;
+    }
+
+    .block.inactive {
+      background-color: white;
+      border: 2px solid purple;
+      color: black;
+    }
+
+    .panel {
+      flex: 1;
+      min-height: 400px;
+      padding: 20px;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e0e0e0;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .panel-text {
+      font-size: 15px;
+      line-height: 1.5;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Помощник координатора встреч</h1>
+
+  <div class="container">
+    <div class="blocks">
+      <div class="block block-synch inactive" data-key="synch" onclick="toggleBlock(this)">
+        Синхронизироваться
+      </div>
+      <div class="block block-approve inactive" data-key="approve" onclick="toggleBlock(this)">
+        Утвердить план
+      </div>
+      <div class="block block-storm inactive" data-key="storm" onclick="toggleBlock(this)">
+        Мозговой штурм
+      </div>
+      <div class="block block-demo inactive" data-key="demo" onclick="toggleBlock(this)">
+        Демонстрация
+      </div>
+      <div class="block block-briefing inactive" data-key="briefing" onclick="toggleBlock(this)">
+        Брифинг
+      </div>
+      <div class="block block-split inactive" data-key="split" onclick="toggleBlock(this)">
+        Распределить задачи
+      </div>
+      <div class="block block-estimate inactive" data-key="estimate" onclick="toggleBlock(this)">
+        Оценка
+      </div>
+      <div class="block block-decomp inactive" data-key="decomp" onclick="toggleBlock(this)">
+        Декомпозиция задач
+      </div>
+    </div>
+
+    <div class="panel" id="description">
+      <div class="panel-title">Что можно сделать?</div>
+      <div class="panel-text">
+        Нажмите на цветной блок слева, чтобы увидеть короткое описание действия.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const texts = {
+      synch: {
+        title: "Синхронизироваться",
+        text: "Кратко проговорить текущий статус, понять, кто из участников что делает и где есть расхождения. Помогает снять недопонимание и выровнять ожидания."
+      },
+      approve: {
+        title: "Утвердить план",
+        text: "Обсудить и зафиксировать итоговый план встречи: сроки, ответственные, порядок обсуждения и финальные решения, которые нужно принять."
+      },
+      storm: {
+        title: "Мозговой штурм",
+        text: "Организовать мозговой штурм: быстро собрать идеи, голосовать за лучшие, выбрать направления для дальнейшей работы."
+      },
+      demo: {
+        title: "Демонстрация",
+        text: "Показать прототип, функционал или результат, чтобы участники увидели конкретику и сразу дали обратную связь."
+      },
+      briefing: {
+        title: "Брифинг",
+        text: "Кратко донести контекст, цели и ключевые ограничения, чтобы все участники были на одной волне перед началом обсуждения."
+      },
+      split: {
+        title: "Распределить задачи",
+        text: "Разложить задачи по людям, назначить владельцев и сроки, чтобы после встречи было ясно, кто за что отвечает."
+      },
+      estimate: {
+        title: "Оценка",
+        text: "Обсудить сложность и время выполнения задач, провести оценку (например, Planning Poker), чтобы план был реалистичным."
+      },
+      decomp: {
+        title: "Декомпозиция задач",
+        text: "Разбить крупные задачи на мелкие подзадачи, чтобы легче планировать, оценивать и отслеживать прогресс по ходу работы."
+      },
+    };
+
+    function updatePanel() {
+      const desc = document.getElementById("description");
+      const activeBlocks = document.querySelectorAll('.block.active');
+      let html = '';
+
+      if (activeBlocks.length === 0) {
+        html = `<div class="panel-title">Что можно сделать?</div>
+                <div class="panel-text">Нажмите на цветной блок слева, чтобы увидеть короткое описание действия.</div>`;
+      } else {
+        activeBlocks.forEach(block => {
+          const key = block.getAttribute('data-key');
+          const data = texts[key];
+          if (data) {
+            html += `<div class="panel-title">${data.title}</div>
+                     <div class="panel-text">${data.text}</div>
+                     <hr>`;
+          }
+        });
+      }
+
+      desc.innerHTML = html;
+    }
+
+    function toggleBlock(block) {
+      if (block.classList.contains('active')) {
+        block.classList.remove('active');
+        block.classList.add('inactive');
+      } else if (block.classList.contains('inactive')) {
+        block.classList.remove('inactive');
+        block.classList.add('active');
+      } else {
+        block.classList.add('active');
+      }
+      updatePanel();
+    }
+
+    // Initialize panel on load
+    updatePanel();
+  </script>
+</body>
+</html>
